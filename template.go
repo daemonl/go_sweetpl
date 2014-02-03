@@ -7,15 +7,15 @@ import (
 	"regexp"
 )
 
-var re_extends *regexp.Regexp = regexp.MustCompile(`{{ extends ["']?([^'"}']*)["']? }}`)
-var re_defineTag *regexp.Regexp = regexp.MustCompile(`{{ ?define \"([^\"]*)" ?}}`)
+var re_extends *regexp.Regexp = regexp.MustCompile("{{ extends [\"']?([^'\"}']*)[\"']? }}")
+var re_defineTag *regexp.Regexp = regexp.MustCompile("{{ ?define \"([^\"]*)\" ?}}")
 var re_templateTag *regexp.Regexp = regexp.MustCompile("{{ ?template \"([^\"]*)\" ([^ ]*)? ?}}")
 
 //var re_endableTag *regexp.Regexp = regexp.MustCompile(`{{ ?(define|if|range|with|end)[^}]*? ?}}`)
 
 type SweeTpl struct {
 	Loader  TemplateLoader
-	FuncMap template.FuncMap
+	FuncMap map[string]interface{} //template.FuncMap
 }
 
 type NamedTemplate struct {
@@ -28,13 +28,17 @@ func (st *SweeTpl) Render(w io.Writer, name string, data interface{}) error {
 	if err != nil {
 		return err
 	}
-	tpl.Funcs(st.FuncMap)
+
 	err = tpl.Execute(w, data)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (st *SweeTpl) GetTemplate(w io.Writer, name string) (*template.Template, error) {
+	return st.assemble(name)
 }
 
 func (st *SweeTpl) add(stack *[]*NamedTemplate, name string) error {
