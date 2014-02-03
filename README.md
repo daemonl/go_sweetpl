@@ -1,4 +1,4 @@
-Ssweetpl
+Sweetpl
 ========
 
 Sugar for Go templates
@@ -11,11 +11,11 @@ All existing template code will work, then the following are added:
 
 ## Extends
 
-  {{ extends "/base.html" }}
-  
-  {{ define "content" }}
-    Blah
-  {{ end }}
+    {{ extends "/base.html" }}
+    
+    {{ define "content" }}
+      Blah
+    {{ end }}
   
 Imports the named template.
 
@@ -28,35 +28,35 @@ Rendering is done on the last 'extends' base in the chain, then the default pack
   
 base.html
 
-  <!DOCTYPE html>
-  <html>
-    <head>
-      <title>{{ template "title" }}</title>
-      {{ template "style" }}
-    </head>
-  </html>
-  
-  {{ define "title" }}Default Title{{ end }}
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>{{ template "title" }}</title>
+        {{ template "style" }}
+      </head>
+    </html>
+    
+    {{ define "title" }}Default Title{{ end }}
   
 view.html
 
-  {{ extends "/base.html" }}
+    {{ extends "/base.html" }}
   
-  {{ define "title" }}Hello World{{ end }}
+    {{ define "title" }}Hello World{{ end }}
   
 Code
 
-  tpl.Render(w, "view.html", nil)
+    tpl.Render(w, "view.html", nil)
   
 Produces
 
-  <!DOCTYPE html>
-  <html>
-    <head>
-      <title>Hello World</title>
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Hello World</title>
 
-    </head>
-  </html>
+      </head>
+    </html>
   
 Two things: 
 
@@ -68,15 +68,27 @@ Two things:
 In the standard package, the default value for "." when calling template is nil, in this 
 package it defaults to the "." of the parent.
 
+## Auto func map import
+The value of SweeTpl.FuncMap is injected into every layer of the template tree automatically.
+
+## Loaders
+You can define your own loader - Interface sweetpl.TemplateLoader, has the method LoadTemplate(string) (string error)
+or there are two defined: Map loader - just a map[string]string of named template sources, and DirLoader which loads them by path from the filesystem (No checking for ../../../etc/ssh/keys yet, so be careful)
+
 ## Usage:
 
-  tpl := sweetpl.SweeTpl{
-    Loader: &sweetpl.DirLoader{
-		  BasePath: templatePath,
-		},
-	}
-	
-	tpl.Render(w, "view.html", "Hello World")
+  	tpl := sweetpl.SweeTpl{
+  		Loader: &sweetpl.DirLoader{
+  			BasePath: templatePath,
+  		},
+  		FuncMap: template.FuncMap{
+  			"asset": func(in string) string {
+  				return "/" + in
+  			},
+  		},
+  	}
+  	
+  	tpl.Render(w, "view.html", "Hello World")
 
   
   
