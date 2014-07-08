@@ -5,10 +5,15 @@ import (
 	"html/template"
 	"io"
 
+	"errors"
+	"io/ioutil"
+	"os"
+	"path"
 	"regexp"
 )
 
 var re_extends *regexp.Regexp = regexp.MustCompile("{{ extends [\"']?([^'\"}']*)[\"']? }}")
+var re_include *regexp.Regexp = regexp.MustCompile(`{{ include ["']?([^"]*)["']? }}`)
 var re_defineTag *regexp.Regexp = regexp.MustCompile("{{ ?define \"([^\"]*)\" ?\"?([a-zA-Z0-9]*)?\"? ?}}")
 var re_templateTag *regexp.Regexp = regexp.MustCompile("{{ ?template \"([^\"]*)\" ?([^ ]*)? ?}}")
 
@@ -73,7 +78,16 @@ func (st *SweeTpl) add(stack *[]*NamedTemplate, name string) error {
 	return nil
 }
 
-func (st *SweeTpl) assemble(name string) (*template.Template, error) {
+func (st *SweeTpl) assemble(name string) (rootTemplate *template.Template, assembleErr error) {
+	defer func() {
+		if r := recover(); r != nil {
+			if err, ok := r.(error); ok {
+				assembleErr = err
+			} else {
+				assembleErr = errors.New("Panic during assemble")
+			}
+		}
+	}()
 
 	stack := []*NamedTemplate{}
 
@@ -87,7 +101,27 @@ func (st *SweeTpl) assemble(name string) (*template.Template, error) {
 	blocks := map[string]string{}
 	blockId := 0
 
-	var rootTemplate *template.Template
+	// Pick out all 'include' blocks and replace them with the raw
+	// text from the requested template (using the configured template
+	// directory as a base path)
+	for _, namedTemplate := range stack {
+		namedTemplate.Src = re_include.ReplaceAllStringFunc(namedTemplate.Src, func(raw string) string {
+			parsed := re_include.FindStringSubmatch(raw)
+			templatePath := parsed[1]
+			if dirLoader, ok := st.Loader.(*DirLoader); ok {
+				templatePath = path.Join(dirLoader.BasePath, templatePath)
+			}
+			f, err := os.Open(templatePath)
+			if err != nil {
+				panic(err)
+			}
+			body, err := ioutil.ReadAll(f)
+			if err != nil {
+				panic(err)
+			}
+			return string(body)
+		})
+	}
 
 	// Pick out all 'define' blocks and replace them with UIDs.
 	// The Map should contain the 'last' definition of each, which is the most specific
