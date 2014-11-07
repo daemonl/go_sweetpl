@@ -5,10 +5,6 @@ import (
 	"html/template"
 	"io"
 
-	"errors"
-	"io/ioutil"
-	"os"
-	"path"
 	"regexp"
 )
 
@@ -78,16 +74,7 @@ func (st *SweeTpl) add(stack *[]*NamedTemplate, name string) error {
 	return nil
 }
 
-func (st *SweeTpl) assemble(name string) (rootTemplate *template.Template, assembleErr error) {
-	defer func() {
-		if r := recover(); r != nil {
-			if err, ok := r.(error); ok {
-				assembleErr = err
-			} else {
-				assembleErr = errors.New("Panic during assemble")
-			}
-		}
-	}()
+func (st *SweeTpl) assemble(name string) (*template.Template, error) {
 
 	stack := []*NamedTemplate{}
 
@@ -105,22 +92,22 @@ func (st *SweeTpl) assemble(name string) (rootTemplate *template.Template, assem
 	// text from the requested template (using the configured template
 	// directory as a base path)
 	for _, namedTemplate := range stack {
+		var errInReplace error = nil
 		namedTemplate.Src = re_include.ReplaceAllStringFunc(namedTemplate.Src, func(raw string) string {
 			parsed := re_include.FindStringSubmatch(raw)
 			templatePath := parsed[1]
-			if dirLoader, ok := st.Loader.(*DirLoader); ok {
-				templatePath = path.Join(dirLoader.BasePath, templatePath)
-			}
-			f, err := os.Open(templatePath)
+
+			subTpl, err := st.Loader.LoadTemplate(templatePath)
 			if err != nil {
-				panic(err)
+				errInReplace = err
+				return "[error]"
 			}
-			body, err := ioutil.ReadAll(f)
-			if err != nil {
-				panic(err)
-			}
-			return string(body)
+
+			return subTpl
 		})
+		if errInReplace != nil {
+			return nil, errInReplace
+		}
 	}
 
 	// Pick out all 'define' blocks and replace them with UIDs.
@@ -137,6 +124,8 @@ func (st *SweeTpl) assemble(name string) (rootTemplate *template.Template, assem
 			return "{{ define \"" + blockName + "\" }}"
 		})
 	}
+
+	var rootTemplate *template.Template
 
 	// 1) Pick out all 'template' blocks, and replace with the UID from above.
 	// 2) Render
@@ -162,7 +151,6 @@ func (st *SweeTpl) assemble(name string) (rootTemplate *template.Template, assem
 		if i == 0 {
 			thisTemplate = template.New(namedTemplate.Name)
 			rootTemplate = thisTemplate
-
 		} else {
 			thisTemplate = rootTemplate.New(namedTemplate.Name)
 		}
