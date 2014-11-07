@@ -75,11 +75,11 @@ var tplSub1 string = `{{ extends "Folder/Main-file_name.html.twig" }}
 {{ end }}
 {{ define "content" }}
 	{{ if eq 1 1 }}
-	  {{ range .Slice }}
-	    {{ . }}
-	  {{ else }}
-	    NO SLICE
-	  {{ end }} 
+		{{ range .Slice }}
+			{{ . }}
+		{{ else }}
+			NO SLICE
+		{{ end }}
 	{{ else }}
 	{{ end }}
 <DEFAULT CONTENT>

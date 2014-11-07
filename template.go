@@ -8,10 +8,10 @@ import (
 	"regexp"
 )
 
-var re_extends *regexp.Regexp = regexp.MustCompile("{{ extends [\"']?([^'\"}']*)[\"']? }}")
+var re_extends *regexp.Regexp = regexp.MustCompile(`{{ extends ["']?([^'"}']*)["']? }}`)
 var re_include *regexp.Regexp = regexp.MustCompile(`{{ include ["']?([^"]*)["']? }}`)
-var re_defineTag *regexp.Regexp = regexp.MustCompile("{{ ?define \"([^\"]*)\" ?\"?([a-zA-Z0-9]*)?\"? ?}}")
-var re_templateTag *regexp.Regexp = regexp.MustCompile("{{ ?template \"([^\"]*)\" ?([^ ]*)? ?}}")
+var re_defineTag *regexp.Regexp = regexp.MustCompile(`{{ ?define "([^"]*)" ?"?([a-zA-Z0-9]*)?"? ?}}`)
+var re_templateTag *regexp.Regexp = regexp.MustCompile(`{{ ?template \"([^"]*)" ?([^ ]*)? ?}}`)
 
 //var re_endableTag *regexp.Regexp = regexp.MustCompile(`{{ ?(define|if|range|with|end)[^}]*? ?}}`)
 
