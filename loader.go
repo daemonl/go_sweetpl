@@ -2,7 +2,7 @@ package sweetpl
 
 import (
 	"io/ioutil"
-	"os"
+	"net/http"
 )
 
 type TemplateLoader interface {
@@ -10,12 +10,13 @@ type TemplateLoader interface {
 }
 
 type DirLoader struct {
+	Fs http.FileSystem
 	BasePath string
 }
 
 // DirLoader.LoadTemplate gets BaseAddress + name. No safety checking yet.
 func (l *DirLoader) LoadTemplate(name string) (string, error) {
-	file, err := os.Open(l.BasePath + "/" + name)
+	file, err := l.Fs.Open(l.BasePath + "/" + name)
 	if err != nil {
 		return "", err
 	}
