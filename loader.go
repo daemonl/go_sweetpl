@@ -3,6 +3,7 @@ package sweetpl
 import (
 	"io/ioutil"
 	"os"
+	"path"
 )
 
 type TemplateLoader interface {
@@ -15,7 +16,7 @@ type DirLoader struct {
 
 // DirLoader.LoadTemplate gets BaseAddress + name. No safety checking yet.
 func (l *DirLoader) LoadTemplate(name string) (string, error) {
-	file, err := os.Open(l.BasePath + "/" + name)
+	file, err := os.Open(path.Join(l.BasePath, name))
 	if err != nil {
 		return "", err
 	}

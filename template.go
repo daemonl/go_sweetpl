@@ -16,8 +16,10 @@ var re_templateTag *regexp.Regexp = regexp.MustCompile(`{{ ?template \"([^"]*)" 
 //var re_endableTag *regexp.Regexp = regexp.MustCompile(`{{ ?(define|if|range|with|end)[^}]*? ?}}`)
 
 type SweeTpl struct {
-	Loader  TemplateLoader
-	FuncMap map[string]interface{} //template.FuncMap
+	Loader      TemplateLoader
+	FuncMap     map[string]interface{} //template.FuncMap
+	cache       map[string]*template.Template
+	ForceReload bool
 }
 
 type NamedTemplate struct {
@@ -25,10 +27,28 @@ type NamedTemplate struct {
 	Src  string
 }
 
+func (st *SweeTpl) ClearCache() {
+	st.cache = map[string]*template.Template{}
+}
+
 func (st *SweeTpl) Render(w io.Writer, name string, data interface{}) error {
-	tpl, err := st.assemble(name)
-	if err != nil {
-		return err
+	var err error
+	var tpl *template.Template
+
+	if !st.ForceReload {
+		if st.cache == nil {
+			st.ClearCache()
+		}
+		tpl = st.cache[name]
+	}
+	if tpl == nil {
+		tpl, err = st.assemble(name)
+		if err != nil {
+			return err
+		}
+		if !st.ForceReload {
+			st.cache[name] = tpl
+		}
 	}
 
 	if tpl == nil {
